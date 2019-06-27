@@ -1,9 +1,12 @@
 const functions = require('firebase-functions')
 const admin = require('firebase-admin')
+const dotenv = require('dotenv').config()
 
 admin.initializeApp()
 
 const app = require('express')()
+
+// console.log(process.env.CONFIG_FIREBASE)
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAO1VRvL2K8-46sDoxNuAppXqPbXjZfR4Q',
@@ -40,7 +43,42 @@ app.get('/screams', (req, res) => {
     .catch(err => console.log(err))
 })
 
-app.post('/scream', (req, res) => {
+const FBAuth = (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer ')
+  ) {
+    idToken = req.headers.authorization.split('Bearer ')[1]
+  } else {
+    console.error('No token found')
+    return res.status(403).json({ error: 'Unauthorized' })
+  }
+
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then(decodedToken => {
+      req.user = decodedToken
+
+      return (
+        db
+          .collection('users')
+          .where('userId', '==', req.user.uid)
+          .limit(1)
+          .get()
+      )
+    })
+    .then(data => {
+      req.user.handle = data.docs[0].data().handle
+      return next()
+    })
+    .catch(err => {
+      console.error('Error while verifying token', err)
+      return res.status(403).json(err)
+    })
+}
+
+app.post('/scream', FBAuth, (req, res) => {
   const newScream = {
     body: req.body.body,
     userHandle: req.body.userHandle,
@@ -126,8 +164,7 @@ app.post('/signup', (req, res) => {
       return db.doc(`/users/${newUser.handle}`).set(userCredentials)
     })
     .then(() => {
-      return res.status(201).json({ token })
-    })
+      return res.status(201).json({ token   })
     .catch(err => {
       if (err.code === 'auth/email-already-in-use') {
         return res.status(400).json({ email: 'email is already in use' })
@@ -166,8 +203,9 @@ app.post('/login', (req, res) => {
         return res
           .status(403)
           .json({ general: 'Wrong credentials, please try again!' })
+      } else {
+        return res.status(500).json({ error: err.code })
       }
-      res.status(500).json({ error: err.code })
     })
 })
 
