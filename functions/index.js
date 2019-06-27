@@ -8,15 +8,8 @@ const app = require('express')()
 
 // console.log(process.env.CONFIG_FIREBASE)
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyAO1VRvL2K8-46sDoxNuAppXqPbXjZfR4Q',
-  authDomain: 'socialape-b13e5.firebaseapp.com',
-  databaseURL: 'https://socialape-b13e5.firebaseio.com',
-  projectId: 'socialape-b13e5',
-  storageBucket: 'socialape-b13e5.appspot.com',
-  messagingSenderId: '448923400608',
-  appId: '1:448923400608:web:6b33c86927c01010'
-}
+const firebaseConfig = {//COnfig files}
+  
 
 const firebase = require('firebase')
 firebase.initializeApp(firebaseConfig)
